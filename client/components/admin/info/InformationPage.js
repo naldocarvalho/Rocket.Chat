@@ -6,7 +6,6 @@ import { useViewStatisticsPermission } from '../../../hooks/usePermissions';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useReactiveValue } from '../../../hooks/useReactiveValue';
 import { Info } from '../../../../app/utils';
-import { SideNav } from '../../../../app/ui-utils/client/lib/SideNav';
 import { Header } from '../../header/Header';
 import { Link } from '../../basic/Link';
 import { ErrorAlert } from '../../basic/ErrorAlert';
@@ -16,6 +15,7 @@ import { RuntimeEnvironmentSection } from './RuntimeEnvironmentSection';
 import { BuildEnvironmentSection } from './BuildEnvironmentSection';
 import { UsageSection } from './UsageSection';
 import { InstancesSection } from './InstancesSection';
+import { useAdminSidebar } from '../useAdminSidebar';
 
 const useStatistics = (canViewStatistics) => {
 	const [isLoading, setLoading] = useState(true);
@@ -91,21 +91,18 @@ export function InformationPage() {
 		fetchStatistics();
 	};
 
-	useEffect(() => {
-		SideNav.setFlex('adminFlex');
-		SideNav.openFlex();
-	}, []);
+	useAdminSidebar();
 
 	const alertOplogForMultipleInstances = statistics && statistics.instanceCount > 1 && !statistics.oplogEnabled;
 
 	return <section className='page-container page-list Admin__InformationPage'>
 		<Header rawSectionName={t('Info')} hideHelp>
 			{canViewStatistics
-				&& <div className='rc-header__block rc-header__block-action'>
+				&& <Header.ActionBlock>
 					<Button primary type='button' onClick={handleRefreshClick}>
 						<Icon name='reload' /> {t('Refresh')}
 					</Button>
-				</div>}
+				</Header.ActionBlock>}
 		</Header>
 
 		<div className='content'>
