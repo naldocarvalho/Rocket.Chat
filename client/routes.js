@@ -277,8 +277,11 @@ FlowRouter.route('/admin/:group?', {
 				break;
 			}
 
-			default:
-				BlazeLayout.render('main', { center: 'admin' });
+			default: {
+				const { AnySettingsPage } = await import('./components/admin/any/AnySettingsPage');
+				BlazeLayout.render('main', { center: await createTemplateForComponent(AnySettingsPage, { group }) });
+				// BlazeLayout.render('main', { center: 'admin' });
+			}
 		}
 	},
 });
