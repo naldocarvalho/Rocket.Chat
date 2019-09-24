@@ -1,5 +1,3 @@
-/* eslint-disable new-cap */
-/* eslint-disable complexity */
 import { Meteor } from 'meteor/meteor';
 import { Mongo } from 'meteor/mongo';
 import { Random } from 'meteor/random';
@@ -204,6 +202,68 @@ export function AnySettingsPage({ group: groupId }) {
 		return option && option.value === val;
 	};
 
+	const isAppLanguage = (key) => {
+		const languageKey = settings.get('Language');
+		return typeof languageKey === 'string' && languageKey.toLowerCase() === key;
+	};
+
+	const getColorVariable = (color) => color.replace(/theme-color-/, '@');
+
+	const hasChanges = (section) => {
+		const query = {
+			group: groupId,
+			changed: true,
+		};
+		if (section === '') {
+			query.$or = [
+				{
+					section: '',
+				}, {
+					section: {
+						$exists: false,
+					},
+				},
+			];
+		} else {
+			query.section = section;
+		}
+		return TempSettings.find(query).count() > 0;
+	};
+
+	const renderStringSettingInput = ({ multiline, _id, value, placeholder, blocked, enableQuery, readonly, autocomplete }) => (
+		multiline
+			? <textarea className='input-monitor rc-input__element' name={_id} rows='4' style={{ height: 'auto' }} value={value} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} />
+			: <input className='input-monitor rc-input__element' type='text' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />
+	);
+
+	const renderRelativeUrlSettingInput = ({ _id, value, placeholder, blocked, enableQuery, readonly, autocomplete }) =>
+		<input className='input-monitor rc-input__element' type='text' name={_id} value={Meteor.absoluteUrl(value)} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />;
+
+	const renderPasswordSettingInput = ({ _id, value, placeholder, blocked, enableQuery, readonly, autocomplete }) =>
+		<input className='input-monitor rc-input__element' type='password' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />;
+
+	const renderIntSettingInput = ({ _id, value, placeholder, blocked, enableQuery, readonly, autocomplete }) =>
+		<input className='input-monitor rc-input__element' type='number' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />;
+
+	const renderBooleanSettingInput = ({ _id, value, blocked, enableQuery, readonly, autocomplete }) => <>
+		<label>
+			<input className='input-monitor' type='radio' name={_id} value='1' checked={value === true} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} /> {t('True')}
+		</label>
+		<label>
+			<input className='input-monitor' type='radio' name={_id} value='0' checked={value === false} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} /> {t('False')}
+		</label>
+	</>;
+
+	const renderSelectSettingInput = ({ _id, blocked, enableQuery, readonly, values }) =>
+		<div className='rc-select'>
+			<select className='input-monitor rc-select__element' name={_id} {...isDisabled({ blocked, enableQuery })} readOnly={readonly}>
+				{values.map(({ key, i18nLabel }) =>
+					<option key={key} value={key} selected={selectedOption(_id, key)}>{t(i18nLabel)}</option>
+				)}
+			</select>
+			<Icon block='rc-select__arrow' icon='arrow-down' />
+		</div>;
+
 	const languages = () => {
 		const languages = TAPi18n.getLanguages();
 
@@ -220,45 +280,90 @@ export function AnySettingsPage({ group: groupId }) {
 		return result;
 	};
 
-	const isAppLanguage = (key) => {
-		const languageKey = settings.get('Language');
-		return typeof languageKey === 'string' && languageKey.toLowerCase() === key;
-	};
+	const renderLanguageSettingInput = ({ _id, blocked, enableQuery, readonly }) =>
+		<div className='rc-select'>
+			<select className='input-monitor rc-select__element' name={_id} {...isDisabled({ blocked, enableQuery })} readOnly={readonly}>
+				{languages().map(({ key, name }) =>
+					<option key={key} value={key} selected={isAppLanguage(key)} dir='auto'>{name}</option>
+				)}
+			</select>
+			<Icon block='rc-select__arrow' icon='arrow-down' />
+		</div>;
 
-	const getColorVariable = (color) => color.replace(/theme-color-/, '@');
+	const renderColorSettingInput = ({ _id, value, editor, allowedTypes, blocked, enableQuery, autocomplete }) => <>
+		<div className='horizontal'>
+			{editor === 'color'
+				&& <div className='flex-grow-1'>
+					<input className='input-monitor rc-input__element colorpicker-input' type='text' name={_id} value={value} autocomplete='off' {...isDisabled({ blocked, enableQuery })}/>
+					<span className='colorpicker-swatch border-component-color' style={{ backgroundColor: value }} />
+				</div>}
+			{editor === 'expression'
+				&& <div className='flex-grow-1'>
+					<input className='input-monitor rc-input__element' type='text' name={_id} value={value} {...isDisabled({ blocked, enableQuery })} autoComplete={autocomplete === false ? 'off' : undefined} />
+				</div>}
+			<div className='color-editor'>
+				<select name='color-editor'>
+					{allowedTypes && allowedTypes.map((allowedType) =>
+						<option key={allowedType} value={allowedType} selected={editor === allowedType}>{t(allowedType)}</option>
+					)}
+				</select>
+			</div>
+		</div>
+		<div className='settings-description'>Variable name: {getColorVariable(_id)}</div>
+	</>;
 
-	const hasChanges = (section) => {
-		const query = {
-			group: groupId,
-			changed: true,
-		};
-		if (section != null) {
-			if (section === '') {
-				query.$or = [
-					{
-						section: '',
-					}, {
-						section: {
-							$exists: false,
-						},
-					},
-				];
-			} else {
-				query.section = section;
-			}
-		}
-		return TempSettings.find(query).count() > 0;
-	};
+	const renderFontSettingInput = ({ _id, value, blocked, enableQuery, autocomplete }) =>
+		<input className='input-monitor rc-input__element' type='text' name={_id} value={value} {...isDisabled({ blocked, enableQuery })} autoComplete={autocomplete === false ? 'off' : undefined} />;
 
-	const random = () => Random.id();
+	const renderCodeSettingInput = ({ _id, blocked, enableQuery, i18nLabel }) => (
+		isDisabled({ blocked, enableQuery }).disabled
+			? <>{/* {> CodeMirror name=_id options=(getEditorOptions true) code=(i18nDefaultValue) }*/}</>
+			: <div className='code-mirror-box' data-editor-id={_id}>
+				<div className='title'>{(i18nLabel && t(i18nLabel)) || (_id || t(_id))}</div>
+				{/* {> CodeMirror name=_id options=getEditorOptions code=value editorOnBlur=setEditorOnBlur}*/}
 
-	const assetAccept = (fileConstraints) => {
-		if (fileConstraints.extensions && fileConstraints.extensions.length) {
-			return `.${ fileConstraints.extensions.join(', .') }`;
-		}
-	};
+				<div className='buttons'>
+					<Button primary className='button-fullscreen'>{t('Full_Screen')}</Button>
+					<Button primary className='button-restore'>{t('Exit_Full_Screen')}</Button>
+				</div>
+			</div>
+	);
 
-	const RocketChatMarkdownUnescape = (text) => Markdown.parseNotEscaped(text);
+	const renderActionSettingInput = ({ _id, value, blocked, enableQuery, actionText, section }) => (
+		hasChanges(section)
+			? <span style={{ lineHeight: '40px' }} className='secondary-font-color'>{t('Save_to_enable_this_action')}</span>
+			: <Button primary className='action' data-setting={_id} data-action={value} {...isDisabled({ blocked, enableQuery })}>{t(actionText)}</Button>
+	);
+
+	const renderAssetSettingInput = ({ value, fileConstraints }) => (
+		value.url
+			? <div className='settings-file-preview'>
+				<div className='preview' style={{ backgroundImage: `url(${ value.url }?_dc=${ Random.id() })` }} />
+				<div className='action'>
+					<Button className='rc-button rc-button--cancel delete-asset'>
+						<Icon icon='icon-trash' />{t('Delete')}
+					</Button>
+				</div>
+			</div>
+			: <div className='settings-file-preview'>
+				<div className='preview no-file background-transparent-light secondary-font-color'><Icon icon='icon-upload' /></div>
+				<div className='action'>
+					<div className='rc-button rc-button--primary'>{t('Select_file')}
+						<input type='file' accept={fileConstraints.extensions && fileConstraints.extensions.length && `.${ fileConstraints.extensions.join(', .') }`} />
+					</div>
+				</div>
+			</div>);
+
+	const renderRoomPickSettingInput = ({ _id }) => <div>
+		{/* {{> inputAutocomplete settings=autocompleteRoom id=_id name=_id class="search autocomplete rc-input__element" autocomplete="off" disabled=isDisabled.disabled}} */}
+		<ul class='selected-rooms'>
+			{(selectedRooms[_id] || []).map(({ name }) =>
+				<li key={name} className='remove-room' data-setting={_id}>
+					{name} <Icon icon='icon-cancel' />
+				</li>
+			)}
+		</ul>
+	</div>;
 
 	return <section className='page-container page-home page-static page-settings'>
 		<Header rawSectionName={t(group.i18nLabel)}>
@@ -284,139 +389,37 @@ export function AnySettingsPage({ group: groupId }) {
 				{sections.map(({ name: sectionName, settings }) => <SettingsGroupSectionPanel key={sectionName} name={sectionName} defaultCollapsed={!!sectionName}>
 					{sectionName && sectionIsCustomOAuth(sectionName) && <div className='section-helper' dangerouslySetInnerHTML={{ __html: t('Custom_oauth_helper', callbackURL(sectionName)) }} />}
 
-					{settings.map(({ _id, blocked, enableQuery, i18nLabel, label, disableReset, readonly, type, multiline, value, placeholder, autocomplete, values, editor, allowedTypes, actionText, fileConstraints, description, alert }) =>
-						<div key={_id} className={['input-line', 'double-col', isSettingChanged(_id) && 'setting-changed'].filter(Boolean).join(' ')} {...isDisabled({ blocked, enableQuery })}>
-							<label className='setting-label' title={_id}>{(i18nLabel && t(i18nLabel)) || (_id || t(_id))}</label>
+					{settings.map((setting) =>
+						<div key={setting._id} className={['input-line', 'double-col', isSettingChanged(setting._id) && 'setting-changed'].filter(Boolean).join(' ')}>
+							<label className='setting-label' title={setting._id}>{(setting.i18nLabel && t(setting.i18nLabel)) || (setting._id || t(setting._id))}</label>
 							<div className='setting-field'>
-								{type === 'string' && (
-									multiline
-										? <textarea className='input-monitor rc-input__element' name={_id} rows='4' style={{ height: 'auto' }} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} defaultValue={value} />
-										: <input className='input-monitor rc-input__element' type='text' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />
-								)}
+								{setting.type === 'string' && renderStringSettingInput(setting)}
+								{setting.type === 'relativeUrl' && renderRelativeUrlSettingInput(setting)}
+								{setting.type === 'password' && renderPasswordSettingInput(setting)}
+								{setting.type === 'int' && renderIntSettingInput(setting)}
+								{setting.type === 'boolean' && renderBooleanSettingInput(setting)}
+								{setting.type === 'select' && renderSelectSettingInput(setting)}
+								{setting.type === 'language' && renderLanguageSettingInput(setting)}
+								{setting.type === 'color' && renderColorSettingInput(setting)}
+								{setting.type === 'font' && renderFontSettingInput(setting)}
+								{setting.type === 'code' && renderCodeSettingInput(setting)}
+								{setting.type === 'action' && renderActionSettingInput(setting)}
+								{setting.type === 'asset' && renderAssetSettingInput(setting)}
+								{setting.type === 'roomPick' && renderRoomPickSettingInput(setting)}
 
-								{type === 'relativeUrl'
-										&& <input className='input-monitor rc-input__element' type='text' name={_id} value={Meteor.absoluteUrl(value)} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />}
+								{t.exists(setting.i18nDescription) && <div className='settings-description secondary-font-color'>
+									<span dangerouslySetInnerHTML={{ __html: Markdown.parseNotEscaped(t(setting.i18nDescription)) }} />
+								</div>}
 
-								{type === 'password'
-										&& <input className='input-monitor rc-input__element' type='password' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />}
-
-								{type === 'int'
-										&& <input className='input-monitor rc-input__element' type='number' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />}
-
-								{type === 'boolean' && <>
-										<label>
-											<input className='input-monitor' type='radio' name={_id} value='1' checked={value === true} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} /> {t('True')}
-										</label>
-										<label>
-											<input className='input-monitor' type='radio' name={_id} value='0' checked={value === false} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} /> {t('False')}
-										</label>
-									</>}
-
-								{type === 'select'
-										&& <div className='rc-select'>
-											<select className='input-monitor rc-select__element' name={_id} {...isDisabled({ blocked, enableQuery })} readOnly={readonly}>
-												{values.map(({ key, i18nLabel }) =>
-													<option key={key} value={key} selected={selectedOption(_id, key)}>{t(i18nLabel)}</option>
-												)}
-											</select>
-											<Icon block='rc-select__arrow' icon='arrow-down' />
-										</div>}
-
-								{type === 'language'
-										&& <div className='rc-select'>
-											<select className='input-monitor rc-select__element' name={_id} {...isDisabled({ blocked, enableQuery })} readOnly={readonly}>
-												{languages().map(({ key, name }) =>
-													<option key={key} value={key} selected={isAppLanguage(key)} dir='auto'>{name}</option>
-												)}
-											</select>
-											<Icon block='rc-select__arrow' icon='arrow-down' />
-										</div>}
-
-								{type === 'color' && <>
-										<div className='horizontal'>
-											{editor === 'color'
-												&& <div className='flex-grow-1'>
-													<input className='input-monitor rc-input__element colorpicker-input' type='text' name={_id} value={value} autocomplete='off' {...isDisabled({ blocked, enableQuery })}/>
-													<span className='colorpicker-swatch border-component-color' style={{ backgroundColor: value }} />
-												</div>}
-											{editor === 'expression'
-												&& <div className='flex-grow-1'>
-													<input className='input-monitor rc-input__element' type='text' name={_id} value={value} {...isDisabled({ blocked, enableQuery })} autoComplete={autocomplete === false ? 'off' : undefined} />
-												</div>}
-											<div className='color-editor'>
-												<select name='color-editor'>
-													{allowedTypes && allowedTypes.map((allowedType) =>
-														<option key={allowedType} value={allowedType} selected={editor === allowedType}>{t(allowedType)}</option>
-													)}
-												</select>
-											</div>
-										</div>
-										<div className='settings-description'>Variable name: {getColorVariable(_id)}</div>
-									</>}
-
-								{type === 'font'
-										&& <input className='input-monitor rc-input__element' type='text' name={_id} value={value} {...isDisabled({ blocked, enableQuery })} autoComplete={autocomplete === false ? 'off' : undefined} />}
-
-								{type === 'code' && (
-									isDisabled({ blocked, enableQuery }).disabled
-										? <>{/* {> CodeMirror name=_id options=(getEditorOptions true) code=(i18nDefaultValue) }*/}</>
-										: <div className='code-mirror-box' data-editor-id={_id}>
-											<div className='title'>{label}</div>
-											{/* {> CodeMirror name=_id options=getEditorOptions code=value editorOnBlur=setEditorOnBlur}*/}
-
-											<div className='buttons'>
-												<Button primary className='button-fullscreen'>{t('Full_Screen')}</Button>
-												<Button primary className='button-restore'>{t('Exit_Full_Screen')}</Button>
-											</div>
-										</div>
-								)}
-
-								{type === 'action' && (
-									hasChanges(name)
-										? <span style={{ lineHeight: '40px' }} className='secondary-font-color'>{t('Save_to_enable_this_action')}</span>
-										: <Button primary className='action' data-setting={_id} data-action={value} {...isDisabled({ blocked, enableQuery })}>{t(actionText)}</Button>
-								)}
-
-								{type === 'asset' && (
-									value.url
-										? <div className='settings-file-preview'>
-											<div className='preview' style={{ backgroundImage: `url(${ value.url }?_dc=${ random })` }} />
-											<div className='action'>
-												<Button className='rc-button rc-button--cancel delete-asset'>
-													<Icon icon='icon-trash' />{t('Delete')}
-												</Button>
-											</div>
-										</div>
-										: <div className='settings-file-preview'>
-											<div className='preview no-file background-transparent-light secondary-font-color'><Icon icon='icon-upload' /></div>
-											<div className='action'>
-												<div className='rc-button rc-button--primary'>{t('Select_file')}
-													<input type='file' accept={assetAccept(fileConstraints)} />
-												</div>
-											</div>
-										</div>)}
-
-								{type === 'roomPick'
-										&& <div>
-											{/* {{> inputAutocomplete settings=autocompleteRoom id=_id name=_id class="search autocomplete rc-input__element" autocomplete="off" disabled=isDisabled.disabled}} */}
-											<ul class='selected-rooms'>
-												{(selectedRooms[_id] || []).map(({ name }) =>
-													<li key={name} className='remove-room' data-setting={_id}>{name} <Icon icon='icon-cancel' /></li>
-												)}
-											</ul>
-										</div>}
-
-								{description
-										&& <div className='settings-description secondary-font-color' dangerouslySetInnerHTML={{ __html: RocketChatMarkdownUnescape(description) }} />}
-
-								{alert
-										&& <div className='settings-alert pending-color pending-background pending-border'><Icon icon='icon-attention' /><span dangerouslySetInnerHTML={{ __html: t(alert) }} /></div>}
+								{setting.alert && <div className='settings-alert pending-color pending-background pending-border'>
+									<Icon icon='icon-attention' />
+									<span dangerouslySetInnerHTML={{ __html: t(setting.alert) }} />
+								</div>}
 							</div>
 
-							{showResetButton({ _id, disableReset, readonly, type, blocked })
-									&& <Button aria-label={t('Reset')} data-setting={_id} cancel className='reset-setting'>
-										<Icon icon='icon-ccw' className='color-error-contrast' />
-									</Button>}
+							{showResetButton(setting) && <Button aria-label={t('Reset')} data-setting={setting._id} cancel className='reset-setting'>
+								<Icon icon='icon-ccw' className='color-error-contrast' />
+							</Button>}
 						</div>
 					)}
 
