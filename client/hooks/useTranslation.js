@@ -1,18 +1,29 @@
-import { TAPi18n } from 'meteor/rocketchat:tap-i18n';
-import { Tracker } from 'meteor/tracker';
+import { TAPi18n, TAPi18next } from 'meteor/rocketchat:tap-i18n';
 
 import { useReactiveValue } from './useReactiveValue';
 
-const translator = (key, ...replaces) => Tracker.nonreactive(() => {
+const translator = (key, ...replaces) => {
 	if (typeof replaces[0] === 'object') {
-		return TAPi18n.__(key, ...replaces);
+		const [options, lang_tag] = replaces;
+		return TAPi18next.t(key, {
+			ns: 'project',
+			lng: lang_tag,
+			...options,
+		});
 	}
 
-	return TAPi18n.__(key, {
+	if (replaces.length === 0) {
+		return TAPi18next.t(key, { ns: 'project' });
+	}
+
+	return TAPi18next.t(key, {
 		postProcess: 'sprintf',
 		sprintf: replaces,
+		ns: 'project',
 	});
-});
+};
+
+translator.exists = (key, options) => TAPi18next.exists(key, options);
 
 export const useTranslation = () => {
 	useReactiveValue(() => TAPi18n.getLanguage());
