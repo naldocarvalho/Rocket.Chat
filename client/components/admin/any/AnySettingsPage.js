@@ -22,6 +22,31 @@ import { Markdown } from '../../../../app/markdown/client';
 
 const TempSettings = new Mongo.Collection(null);
 
+function SettingsGroupSectionPanel({ children, name, defaultCollapsed }) {
+	const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+	const t = useTranslation();
+
+	const handleTitleClick = () => {
+		setCollapsed(!collapsed);
+	};
+
+	return <div className={['section', collapsed && 'section-collapsed'].filter(Boolean).join(' ')}>
+		{name && <div className='section-title' onClick={handleTitleClick}>
+			<div className='section-title-text'>{t(name)}</div>
+			<div className='section-title-right'>
+				<Button nude aria-label={collapsed ? t('Expand') : t('Collapse')}>
+					<i className={collapsed ? 'icon-angle-down' : 'icon-angle-up'} />
+				</Button>
+			</div>
+		</div>}
+
+		<div className='section-content border-component-color'>
+			{children}
+		</div>
+	</div>;
+}
+
 export function AnySettingsPage({ group: groupId }) {
 	useAdminSidebar();
 
@@ -256,40 +281,29 @@ export function AnySettingsPage({ group: groupId }) {
 			</div>}
 
 			<div className='page-settings rocket-form'>
-				{sections.map(({ name: sectionName, settings }, i) => <div key={i} className={['section', sectionName && 'section-collapsed'].filter(Boolean).join(' ')}>
-					{sectionName && <div className='section-title expand'>
-						<div className='section-title-text'>
-							{sectionName.indexOf(':') > -1 ? sectionName : t(sectionName)}
-						</div>
-						<div className='section-title-right'>
-							<Button nude>
-								<i className='icon-angle-down' />
-							</Button>
-						</div>
-					</div>}
-					<div className='section-content border-component-color'>
-						{sectionName && sectionIsCustomOAuth(sectionName) && <div className='section-helper' dangerouslySetInnerHTML={{ __html: t('Custom_oauth_helper', callbackURL(sectionName)) }} />}
+				{sections.map(({ name: sectionName, settings }, i) => <SettingsGroupSectionPanel key={sectionName} name={sectionName} defaultCollapsed={!!sectionName}>
+					{sectionName && sectionIsCustomOAuth(sectionName) && <div className='section-helper' dangerouslySetInnerHTML={{ __html: t('Custom_oauth_helper', callbackURL(sectionName)) }} />}
 
-						{settings.map(({ _id, blocked, enableQuery, i18nLabel, label, disableReset, readonly, type, multiline, value, placeholder, autocomplete, values, editor, allowedTypes, actionText, fileConstraints, description, alert }) =>
-							<div key={_id} className={['input-line', 'double-col', isSettingChanged(_id) && 'setting-changed'].filter(Boolean).join(' ')} {...isDisabled({ blocked, enableQuery })}>
-								<label className='setting-label' title={_id}>{(i18nLabel && t(i18nLabel)) || (_id || t(_id))}</label>
-								<div className='setting-field'>
-									{type === 'string' && (
-										multiline
-											? <textarea className='input-monitor rc-input__element' name={_id} rows='4' style={{ height: 'auto' }} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} defaultValue={value} />
-											: <input className='input-monitor rc-input__element' type='text' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />
-									)}
+					{settings.map(({ _id, blocked, enableQuery, i18nLabel, label, disableReset, readonly, type, multiline, value, placeholder, autocomplete, values, editor, allowedTypes, actionText, fileConstraints, description, alert }) =>
+						<div key={_id} className={['input-line', 'double-col', isSettingChanged(_id) && 'setting-changed'].filter(Boolean).join(' ')} {...isDisabled({ blocked, enableQuery })}>
+							<label className='setting-label' title={_id}>{(i18nLabel && t(i18nLabel)) || (_id || t(_id))}</label>
+							<div className='setting-field'>
+								{type === 'string' && (
+									multiline
+										? <textarea className='input-monitor rc-input__element' name={_id} rows='4' style={{ height: 'auto' }} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} defaultValue={value} />
+										: <input className='input-monitor rc-input__element' type='text' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />
+								)}
 
-									{type === 'relativeUrl'
+								{type === 'relativeUrl'
 										&& <input className='input-monitor rc-input__element' type='text' name={_id} value={Meteor.absoluteUrl(value)} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />}
 
-									{type === 'password'
+								{type === 'password'
 										&& <input className='input-monitor rc-input__element' type='password' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />}
 
-									{type === 'int'
+								{type === 'int'
 										&& <input className='input-monitor rc-input__element' type='number' name={_id} value={value} placeholder={placeholder} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} />}
 
-									{type === 'boolean' && <>
+								{type === 'boolean' && <>
 										<label>
 											<input className='input-monitor' type='radio' name={_id} value='1' checked={value === true} {...isDisabled({ blocked, enableQuery })} readOnly={readonly} autoComplete={autocomplete === false ? 'off' : undefined} /> {t('True')}
 										</label>
@@ -298,7 +312,7 @@ export function AnySettingsPage({ group: groupId }) {
 										</label>
 									</>}
 
-									{type === 'select'
+								{type === 'select'
 										&& <div className='rc-select'>
 											<select className='input-monitor rc-select__element' name={_id} {...isDisabled({ blocked, enableQuery })} readOnly={readonly}>
 												{values.map(({ key, i18nLabel }) =>
@@ -308,7 +322,7 @@ export function AnySettingsPage({ group: groupId }) {
 											<Icon block='rc-select__arrow' icon='arrow-down' />
 										</div>}
 
-									{type === 'language'
+								{type === 'language'
 										&& <div className='rc-select'>
 											<select className='input-monitor rc-select__element' name={_id} {...isDisabled({ blocked, enableQuery })} readOnly={readonly}>
 												{languages().map(({ key, name }) =>
@@ -318,7 +332,7 @@ export function AnySettingsPage({ group: groupId }) {
 											<Icon block='rc-select__arrow' icon='arrow-down' />
 										</div>}
 
-									{type === 'color' && <>
+								{type === 'color' && <>
 										<div className='horizontal'>
 											{editor === 'color'
 												&& <div className='flex-grow-1'>
@@ -340,49 +354,49 @@ export function AnySettingsPage({ group: groupId }) {
 										<div className='settings-description'>Variable name: {getColorVariable(_id)}</div>
 									</>}
 
-									{type === 'font'
+								{type === 'font'
 										&& <input className='input-monitor rc-input__element' type='text' name={_id} value={value} {...isDisabled({ blocked, enableQuery })} autoComplete={autocomplete === false ? 'off' : undefined} />}
 
-									{type === 'code' && (
-										isDisabled({ blocked, enableQuery }).disabled
-											? <>{/* {> CodeMirror name=_id options=(getEditorOptions true) code=(i18nDefaultValue) }*/}</>
-											: <div className='code-mirror-box' data-editor-id={_id}>
-												<div className='title'>{label}</div>
-												{/* {> CodeMirror name=_id options=getEditorOptions code=value editorOnBlur=setEditorOnBlur}*/}
+								{type === 'code' && (
+									isDisabled({ blocked, enableQuery }).disabled
+										? <>{/* {> CodeMirror name=_id options=(getEditorOptions true) code=(i18nDefaultValue) }*/}</>
+										: <div className='code-mirror-box' data-editor-id={_id}>
+											<div className='title'>{label}</div>
+											{/* {> CodeMirror name=_id options=getEditorOptions code=value editorOnBlur=setEditorOnBlur}*/}
 
-												<div className='buttons'>
-													<Button primary className='button-fullscreen'>{t('Full_Screen')}</Button>
-													<Button primary className='button-restore'>{t('Exit_Full_Screen')}</Button>
+											<div className='buttons'>
+												<Button primary className='button-fullscreen'>{t('Full_Screen')}</Button>
+												<Button primary className='button-restore'>{t('Exit_Full_Screen')}</Button>
+											</div>
+										</div>
+								)}
+
+								{type === 'action' && (
+									hasChanges(name)
+										? <span style={{ lineHeight: '40px' }} className='secondary-font-color'>{t('Save_to_enable_this_action')}</span>
+										: <Button primary className='action' data-setting={_id} data-action={value} {...isDisabled({ blocked, enableQuery })}>{t(actionText)}</Button>
+								)}
+
+								{type === 'asset' && (
+									value.url
+										? <div className='settings-file-preview'>
+											<div className='preview' style={{ backgroundImage: `url(${ value.url }?_dc=${ random })` }} />
+											<div className='action'>
+												<Button className='rc-button rc-button--cancel delete-asset'>
+													<i className='icon-trash' />{t('Delete')}
+												</Button>
+											</div>
+										</div>
+										: <div className='settings-file-preview'>
+											<div className='preview no-file background-transparent-light secondary-font-color'><i className='icon-upload'></i></div>
+											<div className='action'>
+												<div className='rc-button rc-button--primary'>{t('Select_file')}
+													<input type='file' accept={assetAccept(fileConstraints)} />
 												</div>
 											</div>
-									)}
+										</div>)}
 
-									{type === 'action' && (
-										hasChanges(name)
-											? <span style={{ lineHeight: '40px' }} className='secondary-font-color'>{t('Save_to_enable_this_action')}</span>
-											: <Button primary className='action' data-setting={_id} data-action={value} {...isDisabled({ blocked, enableQuery })}>{t(actionText)}</Button>
-									)}
-
-									{type === 'asset' && (
-										value.url
-											? <div className='settings-file-preview'>
-												<div className='preview' style={{ backgroundImage: `url(${ value.url }?_dc=${ random })` }} />
-												<div className='action'>
-													<Button className='rc-button rc-button--cancel delete-asset'>
-														<i className='icon-trash' />{t('Delete')}
-													</Button>
-												</div>
-											</div>
-											: <div className='settings-file-preview'>
-												<div className='preview no-file background-transparent-light secondary-font-color'><i className='icon-upload'></i></div>
-												<div className='action'>
-													<div className='rc-button rc-button--primary'>{t('Select_file')}
-														<input type='file' accept={assetAccept(fileConstraints)} />
-													</div>
-												</div>
-											</div>)}
-
-									{type === 'roomPick'
+								{type === 'roomPick'
 										&& <div>
 											{/* {{> inputAutocomplete settings=autocompleteRoom id=_id name=_id class="search autocomplete rc-input__element" autocomplete="off" disabled=isDisabled.disabled}} */}
 											<ul class='selected-rooms'>
@@ -392,34 +406,33 @@ export function AnySettingsPage({ group: groupId }) {
 											</ul>
 										</div>}
 
-									{description
+								{description
 										&& <div className='settings-description secondary-font-color' dangerouslySetInnerHTML={{ __html: RocketChatMarkdownUnescape(description) }} />}
 
-									{alert
+								{alert
 										&& <div className='settings-alert pending-color pending-background pending-border'><i className='icon-attention' /><span dangerouslySetInnerHTML={{ __html: t(alert) }} /></div>}
-								</div>
+							</div>
 
-								{showResetButton({ _id, disableReset, readonly, type, blocked })
+							{showResetButton({ _id, disableReset, readonly, type, blocked })
 									&& <Button aria-label={t('Reset')} data-setting={_id} cancel className='reset-setting'>
 										<i className='icon-ccw color-error-contrast' />
 									</Button>}
-							</div>
-						)}
+						</div>
+					)}
 
-						{group._id !== 'Assets' && <div className='input-line double-col'>
-							<label className='setting-label'>{t('Reset_section_settings')}</label>
-							<div className='setting-field'>
-								<Button cancel data-section={sectionName} className='reset-group'>
-									{t('Reset')}
-								</Button>
-							</div>
-						</div>}
+					{group._id !== 'Assets' && <div className='input-line double-col'>
+						<label className='setting-label'>{t('Reset_section_settings')}</label>
+						<div className='setting-field'>
+							<Button cancel data-section={sectionName} className='reset-group'>
+								{t('Reset')}
+							</Button>
+						</div>
+					</div>}
 
-						{sectionName && sectionIsCustomOAuth(sectionName) && <div className='submit'>
-							<Button cancel className='remove-custom-oauth'>{t('Remove_custom_oauth')}</Button>
-						</div>}
-					</div>
-				</div>)}
+					{sectionName && sectionIsCustomOAuth(sectionName) && <div className='submit'>
+						<Button cancel className='remove-custom-oauth'>{t('Remove_custom_oauth')}</Button>
+					</div>}
+				</SettingsGroupSectionPanel>)}
 			</div>
 		</div>
 	</section>;
