@@ -36,7 +36,7 @@ function SettingsGroupSectionPanel({ children, name, defaultCollapsed }) {
 			<div className='section-title-text'>{t(name)}</div>
 			<div className='section-title-right'>
 				<Button nude aria-label={collapsed ? t('Expand') : t('Collapse')}>
-					<i className={collapsed ? 'icon-angle-down' : 'icon-angle-up'} />
+					<Icon icon={collapsed ? 'icon-angle-down' : 'icon-angle-up'} />
 				</Button>
 			</div>
 		</div>}
@@ -281,7 +281,7 @@ export function AnySettingsPage({ group: groupId }) {
 			</div>}
 
 			<div className='page-settings rocket-form'>
-				{sections.map(({ name: sectionName, settings }, i) => <SettingsGroupSectionPanel key={sectionName} name={sectionName} defaultCollapsed={!!sectionName}>
+				{sections.map(({ name: sectionName, settings }) => <SettingsGroupSectionPanel key={sectionName} name={sectionName} defaultCollapsed={!!sectionName}>
 					{sectionName && sectionIsCustomOAuth(sectionName) && <div className='section-helper' dangerouslySetInnerHTML={{ __html: t('Custom_oauth_helper', callbackURL(sectionName)) }} />}
 
 					{settings.map(({ _id, blocked, enableQuery, i18nLabel, label, disableReset, readonly, type, multiline, value, placeholder, autocomplete, values, editor, allowedTypes, actionText, fileConstraints, description, alert }) =>
@@ -383,12 +383,12 @@ export function AnySettingsPage({ group: groupId }) {
 											<div className='preview' style={{ backgroundImage: `url(${ value.url }?_dc=${ random })` }} />
 											<div className='action'>
 												<Button className='rc-button rc-button--cancel delete-asset'>
-													<i className='icon-trash' />{t('Delete')}
+													<Icon icon='icon-trash' />{t('Delete')}
 												</Button>
 											</div>
 										</div>
 										: <div className='settings-file-preview'>
-											<div className='preview no-file background-transparent-light secondary-font-color'><i className='icon-upload'></i></div>
+											<div className='preview no-file background-transparent-light secondary-font-color'><Icon icon='icon-upload' /></div>
 											<div className='action'>
 												<div className='rc-button rc-button--primary'>{t('Select_file')}
 													<input type='file' accept={assetAccept(fileConstraints)} />
@@ -401,7 +401,7 @@ export function AnySettingsPage({ group: groupId }) {
 											{/* {{> inputAutocomplete settings=autocompleteRoom id=_id name=_id class="search autocomplete rc-input__element" autocomplete="off" disabled=isDisabled.disabled}} */}
 											<ul class='selected-rooms'>
 												{(selectedRooms[_id] || []).map(({ name }) =>
-													<li key={name} className='remove-room' data-setting={_id}>{name} <i className='icon-cancel' /></li>
+													<li key={name} className='remove-room' data-setting={_id}>{name} <Icon icon='icon-cancel' /></li>
 												)}
 											</ul>
 										</div>}
@@ -410,12 +410,12 @@ export function AnySettingsPage({ group: groupId }) {
 										&& <div className='settings-description secondary-font-color' dangerouslySetInnerHTML={{ __html: RocketChatMarkdownUnescape(description) }} />}
 
 								{alert
-										&& <div className='settings-alert pending-color pending-background pending-border'><i className='icon-attention' /><span dangerouslySetInnerHTML={{ __html: t(alert) }} /></div>}
+										&& <div className='settings-alert pending-color pending-background pending-border'><Icon icon='icon-attention' /><span dangerouslySetInnerHTML={{ __html: t(alert) }} /></div>}
 							</div>
 
 							{showResetButton({ _id, disableReset, readonly, type, blocked })
 									&& <Button aria-label={t('Reset')} data-setting={_id} cancel className='reset-setting'>
-										<i className='icon-ccw color-error-contrast' />
+										<Icon icon='icon-ccw' className='color-error-contrast' />
 									</Button>}
 						</div>
 					)}
