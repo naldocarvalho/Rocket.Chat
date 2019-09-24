@@ -7,8 +7,9 @@ import { Blaze } from 'meteor/blaze';
 import { HTML } from 'meteor/htmljs';
 import { FlowRouter } from 'meteor/kadira:flow-router';
 import { BlazeLayout } from 'meteor/kadira:blaze-layout';
-import { Template } from 'meteor/templating';
+import { ReactiveVar } from 'meteor/reactive-var';
 import { Session } from 'meteor/session';
+import { Template } from 'meteor/templating';
 
 import { KonchatNotification } from '../app/ui';
 import { ChatSubscription } from '../app/models';
@@ -48,7 +49,14 @@ const createTemplateForComponent = async (
 		throw new Error('the component must have a name');
 	}
 
+	if (Template[name]) {
+		Template[name].props.set(props);
+		return name;
+	}
+
 	Template[name] = new Blaze.Template(name, renderContainerView);
+
+	Template[name].props = new ReactiveVar(props);
 
 	Template[name].onRendered(() => {
 		Template.instance().autorun((computation) => {
@@ -56,7 +64,7 @@ const createTemplateForComponent = async (
 				Template.instance().container = Template.instance().firstNode;
 			}
 
-			ReactDOM.render(React.createElement(component, props), Template.instance().firstNode);
+			ReactDOM.render(React.createElement(component, Template[name].props.get()), Template.instance().firstNode);
 		});
 	});
 
