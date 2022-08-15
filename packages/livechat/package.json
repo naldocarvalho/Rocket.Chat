@@ -100,7 +100,7 @@
 		"preact": "^10.8.2",
 		"preact-router": "^3.2.1",
 		"query-string": "^7.1.1",
-		"react-i18next": "^11.16.9",
+		"react-i18next": "^11.18.4",
 		"whatwg-fetch": "^3.6.2"
 	},
 	"browserslist": [
